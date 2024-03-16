@@ -3,10 +3,35 @@ const app = express();
 
 app.use(express.json());
 
-let ADMINS = [];
+let ADMINS = [{
+  username : "mukesh",
+  password : "pass"
+}];
 let USERS = [];
 let COURSES = [];
 let courseId = 1;
+
+//routes to get adminsinfo
+app.get("/admins", (req, res) => {
+  if(ADMINS.length){
+    res.status(200).json({ msg : ADMINS})
+  }else
+  res.status(404).json({ msg : "There are no admins"})
+})
+//routes to get usersinfo
+app.get("/users", (req, res) => {
+  if(USERS.length){
+    res.status(200).json({ msg : USERS})
+  }else
+  res.status(404).json({ msg : "There are no user"})
+})
+//routes to get adminsinfo
+app.get("/courses", (req, res) => {
+  if(COURSES.length){
+    res.status(200).json({ msg : COURSES})
+  }else
+  res.status(404).json({ msg : "There are no course"})
+})
 
 const adminAuthentication = (req, res, next) => {
   const { username, password } = req.headers;
@@ -19,6 +44,7 @@ const adminAuthentication = (req, res, next) => {
     res.status(403).json({ msg: " Admin authentication failed" });
   }
 };
+
 
 // Admin routes
 app.post("/admin/signup", (req, res) => {
@@ -48,16 +74,20 @@ app.post("/admin/courses", adminAuthentication, (req, res) => {
 
 app.put("/admin/courses/:courseId", adminAuthentication, (req, res) => {
   // logic to edit a course
-  let Id = req.params;
-  let course = req.body;
+  let Id = parseInt(req.params.courseId);
 
-  let courseIndex = COURSES.findIndex((a) => Id === a.Id);
+  let courseIndex = COURSES.findIndex( a => Id === a.Id );
+
   if (courseIndex === -1) {
     res.status(404).json({ msg: " Course Index not found " });
   }
 
-  Object.keys(course).forEach((key) => {
-    COURSES[courseId][key] = course.key;
+  let course = req.body
+  let keys = Object.keys(course);
+  console.log(course, keys)
+
+  keys.forEach((key) => {
+    COURSES[courseIndex][key] = course[key];
   });
   res.status(202).json({ msg: " Course Updated successfully" });
 });
