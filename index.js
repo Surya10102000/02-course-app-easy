@@ -1,3 +1,4 @@
+const { json } = require("body-parser");
 const express = require("express");
 const app = express();
 
@@ -7,8 +8,19 @@ let ADMINS = [{
   username : "mukesh",
   password : "pass"
 }];
-let USERS = [];
-let COURSES = [];
+let USERS = [{
+  username : "suresh",
+  password : "pass",
+  purchasedCourses : []
+}];
+let COURSES = [{ 
+  id: 1,
+  title: 'course title',
+  description: 'course description', 
+  price: 100, 
+  imageLink: 'https://linktoimage.com', 
+  published: true 
+}];
 let courseId = 1;
 
 //routes to get adminsinfo
@@ -42,6 +54,18 @@ const adminAuthentication = (req, res, next) => {
     next();
   } else {
     res.status(403).json({ msg: " Admin authentication failed" });
+  }
+};
+
+const userAuthentication = (req, res, next) => {
+  const { username, password } = req.headers;
+  const user = USERS.find(
+    (a) => a.username === username && a.password === password
+  );
+  if (user) {
+    next();
+  } else {
+    res.status(403).json({ msg: " User authentication failed" });
   }
 };
 
@@ -100,22 +124,50 @@ app.get("/admin/courses", adminAuthentication, (req, res) => {
 // User routes
 app.post("/users/signup", (req, res) => {
   // logic to sign up user
+  const user = req.body;
+  const existingUser = USERS.find( a  => user.username === a.username);
+  if (existingUser) {
+    res.status(403).json({ msg: "User already registered" });
+  } else {
+    user.purchasedCourses = [];
+    USERS.push(user);
+    res.json({ msg: "User created successfully" });
+  }
 });
 
-app.post("/users/login", (req, res) => {
+app.post("/users/login",userAuthentication, (req, res) => {
   // logic to log in user
+  res.json({ msg: "Logged in successfully" });
 });
 
-app.get("/users/courses", (req, res) => {
+app.get("/users/courses",userAuthentication, (req, res) => {
   // logic to list all courses
+  res.status(200).json({ course: COURSES });
 });
 
-app.post("/users/courses/:courseId", (req, res) => {
+app.post("/users/courses/:courseId",userAuthentication, (req, res) => {
   // logic to purchase a course
+  let username = req.headers.username  
+  let courseId = Number(req.params.courseId)
+  let course = COURSES.find(a => a.id === courseId && a.published)
+  if(course){
+    let userIndex = USERS.findIndex( a => a.username === username)
+    USERS[userIndex].purchasedCourses.push(course);
+    res.status(200).json({ msg : "Course purchased successfully"})
+  }else{
+    res.status(404).json({ msg : "Course not found"  })
+  }
 });
 
-app.get("/users/purchasedCourses", (req, res) => {
+app.get("/users/purchasedCourses",userAuthentication, (req, res) => {
   // logic to view purchased courses
+  let username = req.headers.username  
+  let userIndex = USERS.findIndex( a => a.username === username)
+  if( USERS[userIndex].purchasedCourses.length !== 0 ){
+    res.status(200).json({ purchasedCourses : USERS[userIndex].purchasedCourses})
+  }else{
+    res.status(404).json({ msg : " No book found "})
+  }
 });
 
 app.listen(3000, () => {
